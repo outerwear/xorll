@@ -5,7 +5,8 @@
 #define _XORLL_
 
 typedef struct xnode_t {
-    int data;
+    unsigned char *data;
+    size_t data_sz;
     struct xnode_t *link;
 } xnode;
 
@@ -14,14 +15,13 @@ typedef struct xnode_l {
     xnode *end;
 } xmanager;
 
+#define nextX(c, p) (xnode *)((uint64_t)(c)->link ^ (uint64_t)(p));
 
-xnode* initX (int new, xnode *p, xnode *n);
-xnode* nextX (xnode *c, xnode *p);
-void insertX (int data);
-void appendX (int data);
-void addNodeX (int data, xnode *c, xnode *p);
-void searchX (int data, xnode **f, xnode **p);
-void deleteX (int data);
-void printList ();
+xnode* initX (unsigned char *new, size_t size, xnode *p, xnode *n);
+void insertX (unsigned char *data, size_t size);
+void appendX (unsigned char *data, size_t size);
+void addNodeX (unsigned char *data, size_t size, xnode *c, xnode *p);
+void searchX (unsigned char *data, size_t size, xnode **f, xnode **p);
+void deleteX (unsigned char *data, size_t size);
 
 #endif

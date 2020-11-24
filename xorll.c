@@ -5,45 +5,44 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "xorll.h"
 
 /* Global XORLL Manager */
 xmanager xl;
 
-xnode* initX (int new, xnode *p, xnode *n) {
+xnode* initX (unsigned char *new, size_t size, xnode *p, xnode *n) {
     xnode *xn = malloc(sizeof(xnode));
     if (NULL == xn) {
         printf("ERROR: Not enough space to allocate new xnode\n");
     } else {
-        xn->data = new;
+        xn->data = malloc(sizeof(size));
+        xn->data_sz = size;
+        memcpy(xn->data, new, size);
         xn->link = (xnode *)((uint64_t)p ^ (uint64_t)n);
     }
     return xn;
-}
-
-xnode* nextX (xnode *c, xnode *p) {
-    return (xnode *)((uint64_t)c->link ^ (uint64_t)p);
 }
 
 /* Insert/Append
  * If xl is empty then both front and end will be NULL. At no point should 
  * one be NULL and other have a value.
  */
-void insertX (int data) {
+void insertX (unsigned char *data, size_t size) {
     if (NULL == xl.front)
-        xl.front = xl.end = initX(data, NULL, NULL);
+        xl.front = xl.end = initX(data, size, NULL, NULL);
     else {
-        xnode *t = initX(data, NULL, xl.front);
+        xnode *t = initX(data, size, NULL, xl.front);
         xl.front->link = (xnode *)((uint64_t)t ^ (uint64_t)xl.front->link);
         xl.front = t;
     }
 }
 
-void appendX (int data) {
+void appendX (unsigned char *data, size_t size) {
     if (NULL == xl.end)
-        xl.end = xl.front = initX(data, NULL, NULL);
+        xl.end = xl.front = initX(data, size, NULL, NULL);
     else {
-        xnode *t = initX(data, xl.end, NULL);
+        xnode *t = initX(data, size, xl.end, NULL);
         xl.end->link = (xnode *)((uint64_t)t ^ (uint64_t)xl.end->link);
         xl.end = t;
     }
@@ -53,8 +52,8 @@ void appendX (int data) {
  * This is different from insert/append because it adds a node anywhere in
  * the list. It's purpose is to init and update link
  */
-void addNodeX (int data, xnode *c, xnode *p) {
-    xnode *t = initX(data, p, c);
+void addNodeX (unsigned char *data, size_t size, xnode *c, xnode *p) {
+    xnode *t = initX(data, size, p, c);
 
     /* p link update */
     p->link = (xnode *)(((uint64_t)p->link ^ (uint64_t)c) ^ (uint64_t)t);
@@ -67,10 +66,10 @@ void addNodeX (int data, xnode *c, xnode *p) {
  * Traverse through the list until target is found. Found node is returned
  * as a passed parameter with the previous node as well.
  */
-void searchX (int data, xnode **f, xnode **p) {
+void searchX (unsigned char *data, size_t size, xnode **f, xnode **p) {
     *f = xl.front;
     while (NULL != *f) {
-        if (data == (*f)->data)
+        if (size == (*f)->data_sz && 0 == memcmp(data, (*f)->data, size))
             break;
 
         if (*f == xl.front) {
@@ -88,11 +87,11 @@ void searchX (int data, xnode **f, xnode **p) {
 /* Delete
  * Search for node in list, update the surrounding links, free the delete node
  */
-void deleteX (int data) {
+void deleteX (unsigned char *data, size_t size) {
     xnode *d, *p, *n;
     d = p = NULL;
 
-    searchX(data, &d, &p);
+    searchX(data, size, &d, &p);
 
     if (NULL == d) return;
 
@@ -111,29 +110,6 @@ void deleteX (int data) {
     if (NULL != n)
         n->link = (xnode *)(((uint64_t)n->link ^ (uint64_t)d) ^ (uint64_t)p);
 
+    free(d->data);
     free(d);
 }
-
-void printList () {
-    xnode *T = xl.front, *P = NULL;
-
-    printf("XORLL : ");
-    while (NULL != T) {
-        printf("%d", T->data);
-        if (T == xl.front) {
-            T = T->link;
-            P = xl.front;
-        }
-        else if (T == xl.end) {
-            break;
-        }
-        else {
-            xnode *curr = T;
-            T = nextX(T, P);
-            P = curr;
-        }
-        printf(", ");
-    }
-    printf("\n");
-}
-
